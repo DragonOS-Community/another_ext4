@@ -24,26 +24,26 @@ where
 }
 
 /// Common data block descriptor.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Block {
     /// Physical block id
     pub id: PBlockId,
     /// Raw block data
-    pub data: [u8; BLOCK_SIZE],
+    pub data: Box<[u8; BLOCK_SIZE]>,
 }
 
 impl Default for Block {
     fn default() -> Self {
         Self {
             id: 0,
-            data: [0; BLOCK_SIZE],
+            data: Box::new([0; BLOCK_SIZE]),
         }
     }
 }
 
 impl Block {
     /// Create new block with given physical block id and data.
-    pub fn new(block_id: PBlockId, data: [u8; BLOCK_SIZE]) -> Self {
+    pub fn new(block_id: PBlockId, data: Box::<[u8; BLOCK_SIZE]>) -> Self {
         Self { id: block_id, data }
     }
 

@@ -37,7 +37,7 @@ impl Ext4 {
 
     /// Write super block to block device
     pub(super) fn write_super_block(&self, sb: &SuperBlock) {
-        let mut block = Block::new(0, [0; BLOCK_SIZE]);
+        let mut block = Block::new(0, Box::new([0; BLOCK_SIZE]));
         block.write_offset_as(BASE_OFFSET, sb);
         self.write_block(&block)
     }
@@ -48,7 +48,7 @@ impl Ext4 {
         let (block_id, offset) = self.inode_disk_pos(inode_id);
         let block = self.read_block(block_id);
         
-        InodeRef::new(inode_id, block.read_offset_as(offset))
+        InodeRef::new(inode_id, Box::new(block.read_offset_as(offset)))
     }
 
     /// Read the root inode from block device
@@ -68,7 +68,7 @@ impl Ext4 {
     pub(super) fn write_inode_without_csum(&self, inode_ref: &InodeRef) {
         let (block_id, offset) = self.inode_disk_pos(inode_ref.id);
         let mut block = self.read_block(block_id);
-        block.write_offset_as(offset, &inode_ref.inode);
+        block.write_offset_as(offset, &*inode_ref.inode);
         self.write_block(&block)
     }
 
