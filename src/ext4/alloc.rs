@@ -7,13 +7,14 @@ use crate::return_error;
 
 impl Ext4 {
     /// Create a new inode, returning the inode and its number
+    #[inline(never)]
     pub(super) fn create_inode(&self, mode: InodeMode) -> Result<InodeRef> {
         // Allocate an inode
         let is_dir = mode.file_type() == FileType::Directory;
         let id = self.alloc_inode(is_dir)?;
 
         // Initialize the inode
-        let mut inode = Inode::default();
+        let mut inode = Box::new(Inode::default());
         inode.set_mode(mode);
         inode.extent_init();
         let mut inode_ref = InodeRef::new(id, inode);
@@ -26,8 +27,9 @@ impl Ext4 {
     }
 
     /// Create(initialize) the root inode of the file system
+    #[inline(never)]
     pub(super) fn create_root_inode(&self) -> Result<InodeRef> {
-        let mut inode = Inode::default();
+        let mut inode = Box::new(Inode::default());
         inode.set_mode(InodeMode::from_type_and_perm(
             FileType::Directory,
             InodeMode::from_bits_retain(0o755),
@@ -54,7 +56,7 @@ impl Ext4 {
             // Deallocate the block
             self.dealloc_block(inode, pblock)?;
             // Clear the block content
-            self.write_block(&Block::new(pblock, [0; BLOCK_SIZE]));
+            self.write_block(&Block::new(pblock, Box::new([0; BLOCK_SIZE])));
         }
         // Free extent tree
         let pblocks = self.extent_all_tree_blocks(inode);
@@ -62,7 +64,7 @@ impl Ext4 {
             // Deallocate the block
             self.dealloc_block(inode, pblock)?;
             // Clear the block content
-            self.write_block(&Block::new(pblock, [0; BLOCK_SIZE]));
+            self.write_block(&Block::new(pblock, Box::new([0; BLOCK_SIZE])));
         }
         // Free xattr block
         let xattr_block = inode.inode.xattr_block();
@@ -70,7 +72,7 @@ impl Ext4 {
             // Deallocate the block
             self.dealloc_block(inode, xattr_block)?;
             // Clear the block content
-            self.write_block(&Block::new(xattr_block, [0; BLOCK_SIZE]));
+            self.write_block(&Block::new(xattr_block, Box::new([0; BLOCK_SIZE])));
         }
         // Deallocate the inode
         self.dealloc_inode(inode)?;
@@ -115,7 +117,7 @@ impl Ext4 {
         // Load block bitmap
         let bitmap_block_id = bg.desc.block_bitmap_block();
         let mut bitmap_block = self.read_block(bitmap_block_id);
-        let mut bitmap = Bitmap::new(&mut bitmap_block.data, 8 * BLOCK_SIZE);
+        let mut bitmap = Bitmap::new(&mut *bitmap_block.data, 8 * BLOCK_SIZE);
 
         // Find the first free block
         let fblock = bitmap
@@ -156,7 +158,7 @@ impl Ext4 {
         // Load block bitmap
         let bitmap_block_id = bg.desc.block_bitmap_block();
         let mut bitmap_block = self.read_block(bitmap_block_id);
-        let mut bitmap = Bitmap::new(&mut bitmap_block.data, 8 * BLOCK_SIZE);
+        let mut bitmap = Bitmap::new(&mut *bitmap_block.data, 8 * BLOCK_SIZE);
 
         // Free the block
         if bitmap.is_bit_clear(pblock as usize) {
@@ -198,7 +200,7 @@ impl Ext4 {
             let bitmap_block_id = bg.desc.inode_bitmap_block();
             let mut bitmap_block = self.read_block(bitmap_block_id);
             let inode_count = sb.inode_count_in_group(bgid) as usize;
-            let mut bitmap = Bitmap::new(&mut bitmap_block.data, inode_count);
+            let mut bitmap = Bitmap::new(&mut *bitmap_block.data, inode_count);
 
             // Find a free inode
             let idx_in_bg =
@@ -254,7 +256,7 @@ impl Ext4 {
         let bitmap_block_id = bg.desc.inode_bitmap_block();
         let mut bitmap_block = self.read_block(bitmap_block_id);
         let inode_count = sb.inode_count_in_group(bgid) as usize;
-        let mut bitmap = Bitmap::new(&mut bitmap_block.data, inode_count);
+        let mut bitmap = Bitmap::new(&mut *bitmap_block.data, inode_count);
 
         // Free the inode
         if bitmap.is_bit_clear(idx_in_bg as usize) {

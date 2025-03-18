@@ -359,11 +359,11 @@ impl Inode {
 #[derive(Clone, Debug)]
 pub struct InodeRef {
     pub id: InodeId,
-    pub inode: Inode,
+    pub inode: Box<Inode>,
 }
 
 impl InodeRef {
-    pub fn new(id: InodeId, inode: Inode) -> Self {
+    pub fn new(id: InodeId, inode: Box<Inode>) -> Self {
         Self { id, inode }
     }
 
