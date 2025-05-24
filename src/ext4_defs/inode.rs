@@ -166,9 +166,42 @@ pub struct Inode {
 /// Because `[u8; 60]` cannot derive `Default`, we implement it manually.
 impl Default for Inode {
     fn default() -> Self {
-        let mut inode: Self = unsafe { mem::zeroed() };
-        inode.extra_isize = (size_of::<Inode>() - 128) as u16;
-        inode
+        Self {
+            mode: 0,
+            uid: 0,
+            size: 0,
+            atime: 0,
+            ctime: 0,
+            mtime: 0,
+            dtime: 0,
+            gid: 0,
+            link_count: 0,
+            block_count: 0,
+            flags: 0,
+            osd1: 0,
+            block: [0u8; 60],
+            generation: 0,
+            file_acl: 0,
+            size_hi: 0,
+            faddr: 0,
+            osd2: Linux2 {
+                l_blocks_hi: 0,
+                l_file_acl_hi: 0,
+                l_uid_hi: 0,
+                l_gid_hi: 0,
+                l_checksum_lo: 0,
+                l_reserved: 0,
+            },
+            extra_isize: (core::mem::size_of::<Inode>() - 128) as u16,
+            checksum_hi: 0,
+            ctime_extra: 0,
+            mtime_extra: 0,
+            atime_extra: 0,
+            crtime: 0,
+            crtime_extra: 0,
+            version_hi: 0,
+            projid: 0,
+        }
     }
 }
 

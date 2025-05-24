@@ -286,7 +286,7 @@ impl Ext4 {
         self.write_super_block(&sb);
 
         // Clear inode content
-        inode_ref.inode = unsafe { mem::zeroed() };
+        inode_ref.inode = Box::new(Inode::default());
         self.write_inode_without_csum(inode_ref);
 
         Ok(())
