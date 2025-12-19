@@ -52,7 +52,7 @@ impl Ext4 {
             block_device,
         })
     }
-    
+
     /// Initializes the root directory.
     pub fn init(&mut self) -> Result<()> {
         // Create root directory

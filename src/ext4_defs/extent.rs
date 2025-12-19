@@ -301,7 +301,7 @@ impl<'a> ExtentNode<'a> {
                 break;
             }
         }
-        
+
         // debug!("Search res: {:?}", res);
         Err(i)
     }
@@ -322,7 +322,7 @@ impl<'a> ExtentNode<'a> {
             }
             i += 1;
         }
-        
+
         // debug!("Search res: {:?}", res);
         Ok(i - 1)
     }

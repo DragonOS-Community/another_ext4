@@ -98,7 +98,7 @@ impl Ext4 {
         let fblock = self.extent_query_or_create(inode, iblock, 1)?;
         // Update block count
         inode.inode.set_fs_block_count(iblock as u64 + 1);
-        self.write_inode_without_csum(inode);
+        self.write_inode_with_csum(inode);
 
         Ok((iblock, fblock))
     }
@@ -287,7 +287,7 @@ impl Ext4 {
 
         // Clear inode content
         inode_ref.inode = Box::new(Inode::default());
-        self.write_inode_without_csum(inode_ref);
+        self.write_inode_with_csum(inode_ref);
 
         Ok(())
     }

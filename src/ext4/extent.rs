@@ -182,7 +182,7 @@ impl Ext4 {
             let mut leaf_node = inode_ref.inode.extent_root_mut();
             // Insert the extent
             let res = leaf_node.insert_extent(new_ext, leaf.index.unwrap_err());
-            self.write_inode_without_csum(inode_ref);
+            self.write_inode_with_csum(inode_ref);
             // Handle split
             return if let Err(split) = res {
                 self.split_root(inode_ref, &split)
@@ -255,7 +255,7 @@ impl Ext4 {
             let mut parent_node = inode_ref.inode.extent_root_mut();
             parent_depth = parent_node.header().depth();
             res = parent_node.insert_extent_index(&extent_index, child_pos + 1);
-            self.write_inode_without_csum(inode_ref);
+            self.write_inode_with_csum(inode_ref);
         } else {
             // Parent is not root
             let mut parent_block = self.read_block(parent_pblock);
@@ -315,7 +315,7 @@ impl Ext4 {
         // Sync to disk
         self.write_block(&l_block);
         self.write_block(&r_block);
-        self.write_inode_without_csum(inode_ref);
+        self.write_inode_with_csum(inode_ref);
 
         Ok(())
     }

@@ -306,7 +306,7 @@ impl XattrBlock {
         // `p_entry` points to the start of blank area,
         // `p_value` points to the last value,
         // `[p_entry, p_value)` is the blank area.
-        
+
         // Check space, '+1' is reserved for blank area
         if p_value - p_entry < ins_entry_size + ins_value_size + 1 {
             // Not enough space
@@ -396,10 +396,9 @@ impl XattrBlock {
 
         // Move the corresponding values
         // Copy `[p_value, rem_value_pos)` to `[p_value + rem_value_size, rem_value_pos + rem_value_size)`
-        self.0.data.copy_within(
-            p_value..rem_value_pos,
-            p_value + rem_value_size,
-        );
+        self.0
+            .data
+            .copy_within(p_value..rem_value_pos, p_value + rem_value_size);
         // Set `[p_value, p_value + rem_value_size)` to 0
         self.0.data[p_value..p_value + rem_value_size].fill(0);
 

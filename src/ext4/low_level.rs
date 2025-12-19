@@ -192,7 +192,7 @@ impl Ext4 {
         // Continue with full block reads
         while cursor < read_size {
             let read_len = min(BLOCK_SIZE, read_size - cursor);
-            let fblock = match self.extent_query(&file, iblock) {
+            let _fblock = match self.extent_query(&file, iblock) {
                 Ok(fblock) => {
                     // normal
                     let block = self.read_block(fblock);
@@ -203,6 +203,67 @@ impl Ext4 {
                     buf[cursor..cursor + read_len].fill(0);
                 }
             };
+            cursor += read_len;
+            iblock += 1;
+        }
+
+        Ok(cursor)
+    }
+
+    /// Read the target path of a symbolic link (i.e. readlink(2) semantics).
+    ///
+    /// - Returns the raw byte sequence of the link content (not required to end with '\0')
+    /// - For fast symlink (length <= 60), content is stored in inode.i_block (here inode.block[60])
+    /// - For non-fast symlink, content is stored in data blocks, reusing extent read path
+    pub fn readlink(&self, inode_id: InodeId, offset: usize, buf: &mut [u8]) -> Result<usize> {
+        let inode_ref = self.read_inode(inode_id);
+        if !inode_ref.inode.is_softlink() {
+            return_error!(ErrCode::EINVAL, "Inode {} is not a symlink", inode_id);
+        }
+        if buf.is_empty() {
+            return Ok(0);
+        }
+
+        let size = inode_ref.inode.size() as usize;
+        if offset >= size {
+            return Ok(0);
+        }
+
+        // fast symlink: content stored inline in inode.i_block
+        let inline = inode_ref.inode.inline_block();
+        if size <= inline.len() && inode_ref.inode.fs_block_count() == 0 {
+            let n = core::cmp::min(buf.len(), size - offset);
+            buf[..n].copy_from_slice(&inline[offset..offset + n]);
+            return Ok(n);
+        }
+
+        // non-fast symlink: stored in data blocks, reuse extent-based read logic
+        let read_size = min(buf.len(), size - offset);
+        let start_iblock = (offset / BLOCK_SIZE) as LBlockId;
+        let misaligned = offset % BLOCK_SIZE;
+
+        let mut cursor = 0;
+        let mut iblock = start_iblock;
+        if misaligned > 0 {
+            let read_len = min(BLOCK_SIZE - misaligned, read_size);
+            let fblock = self.extent_query(&inode_ref, start_iblock).unwrap();
+            let block = self.read_block(fblock);
+            buf[cursor..cursor + read_len].copy_from_slice(block.read_offset(misaligned, read_len));
+            cursor += read_len;
+            iblock += 1;
+        }
+        while cursor < read_size {
+            let read_len = min(BLOCK_SIZE, read_size - cursor);
+            match self.extent_query(&inode_ref, iblock) {
+                Ok(fblock) => {
+                    let block = self.read_block(fblock);
+                    buf[cursor..cursor + read_len].copy_from_slice(block.read_offset(0, read_len));
+                }
+                Err(_) => {
+                    // hole
+                    buf[cursor..cursor + read_len].fill(0);
+                }
+            }
             cursor += read_len;
             iblock += 1;
         }

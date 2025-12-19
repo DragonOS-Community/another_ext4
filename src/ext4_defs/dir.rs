@@ -85,9 +85,7 @@ impl DirEntry {
     /// Get the name of the directory entry
     pub fn name(&self) -> String {
         let name = &self.name[..self.name_len as usize];
-        unsafe {
-            String::from_utf8_unchecked(name.to_vec())
-        }
+        unsafe { String::from_utf8_unchecked(name.to_vec()) }
     }
 
     /// Compare the name of the directory entry with a given name
