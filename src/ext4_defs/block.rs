@@ -43,7 +43,7 @@ impl Default for Block {
 
 impl Block {
     /// Create new block with given physical block id and data.
-    pub fn new(block_id: PBlockId, data: Box::<[u8; BLOCK_SIZE]>) -> Self {
+    pub fn new(block_id: PBlockId, data: Box<[u8; BLOCK_SIZE]>) -> Self {
         Self { id: block_id, data }
     }
 

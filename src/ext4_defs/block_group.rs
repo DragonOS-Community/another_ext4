@@ -136,6 +136,9 @@ impl BlockGroupRef {
     }
 
     pub fn set_checksum(&mut self, uuid: &[u8]) {
+        // Same as inode checksum: clear the checksum field before calculation to avoid
+        // including old value causing checksum mismatch.
+        self.desc.checksum = 0;
         let mut checksum = crc32(CRC32_INIT, uuid);
         checksum = crc32(checksum, &self.id.to_le_bytes());
         checksum = crc32(checksum, self.desc.to_bytes());

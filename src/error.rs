@@ -8,7 +8,7 @@ use crate::prelude::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErrCode {
     /// Operation not permitted.
-    EPERM = 1, 
+    EPERM = 1,
     /// No such file or directory.
     ENOENT = 2,
     /// I/O error.

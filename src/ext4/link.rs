@@ -27,14 +27,14 @@ impl Ext4 {
     }
 
     /// Unlink a child inode from a parent directory.
-    /// 
+    ///
     /// If `free` is true, the inode will be freed if it has no links.
     pub(super) fn unlink_inode(
         &self,
         parent: &mut InodeRef,
         child: &mut InodeRef,
         name: &str,
-        free: bool, 
+        free: bool,
     ) -> Result<()> {
         // Remove entry from parent directory
         self.dir_remove_entry(parent, name)?;

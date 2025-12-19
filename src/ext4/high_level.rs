@@ -136,7 +136,7 @@ impl Ext4 {
     ///
     /// # Error
     ///
-    /// * `ENOTDIR` - Any parent in the path is not a directory. 
+    /// * `ENOTDIR` - Any parent in the path is not a directory.
     /// * `ENOENT` - The source object does not exist.
     /// * `EEXIST` - The destination object already exists.
     pub fn generic_rename(&self, root: InodeId, src: &str, dst: &str) -> Result<()> {

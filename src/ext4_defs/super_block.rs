@@ -2,7 +2,8 @@
 //!
 //! See [`super::block_group`] for details.
 
-use super::AsBytes;
+use super::{crc::crc32, AsBytes};
+use crate::constants::CRC32_INIT;
 use crate::prelude::*;
 
 // 结构体表示超级块
@@ -153,8 +154,7 @@ impl SuperBlock {
 
     /// The number of block groups.
     pub fn block_group_count(&self) -> u32 {
-        self.block_count().div_ceil(self.blocks_per_group as u64)
-            as u32
+        self.block_count().div_ceil(self.blocks_per_group as u64) as u32
     }
 
     /// The size of inode.
@@ -193,5 +193,17 @@ impl SuperBlock {
     pub fn set_free_blocks_count(&mut self, free_blocks: u64) {
         self.free_block_count_lo = ((free_blocks << 32) >> 32).to_le() as u32;
         self.free_blocks_count_hi = (free_blocks >> 32) as u32;
+    }
+
+    /// Calc and set the superblock checksum (crc32c).
+    ///
+    /// Ext4 Linux behavior: superblock checksum uses crc32c with UUID as seed,
+    /// covering all content from start to before checksum field in superblock byte sequence.
+    pub fn set_checksum(&mut self) {
+        let off = core::mem::offset_of!(SuperBlock, checksum);
+        let bytes = self.to_bytes();
+        let mut csum = crc32(CRC32_INIT, &self.uuid);
+        csum = crc32(csum, &bytes[..off]);
+        self.checksum = csum;
     }
 }

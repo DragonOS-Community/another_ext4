@@ -234,6 +234,18 @@ impl Inode {
         self.file_type() == FileType::SymLink
     }
 
+    /// Return the inline i_block area (60 bytes).
+    ///
+    /// - For ext4, this area can store either extent root or fast symlink link content.
+    pub fn inline_block(&self) -> &[u8; 60] {
+        &self.block
+    }
+
+    /// Mutable inline i_block area (60 bytes).
+    pub fn inline_block_mut(&mut self) -> &mut [u8; 60] {
+        &mut self.block
+    }
+
     pub fn perm(&self) -> InodeMode {
         self.mode().perm()
     }
@@ -366,14 +378,12 @@ impl Inode {
     /* Extent methods */
 
     /// Get the immutable extent root node
-    pub fn extent_root(&self) -> ExtentNode {
-        ExtentNode::from_bytes(unsafe {
-            core::slice::from_raw_parts(self.block.as_ptr(), 60)
-        })
+    pub fn extent_root(&self) -> ExtentNode<'_> {
+        ExtentNode::from_bytes(unsafe { core::slice::from_raw_parts(self.block.as_ptr(), 60) })
     }
 
     /// Get the mutable extent root node
-    pub fn extent_root_mut(&mut self) -> ExtentNodeMut {
+    pub fn extent_root_mut(&mut self) -> ExtentNodeMut<'_> {
         ExtentNodeMut::from_bytes(unsafe {
             core::slice::from_raw_parts_mut(self.block.as_mut_ptr(), 60)
         })
@@ -401,6 +411,10 @@ impl InodeRef {
     }
 
     pub fn set_checksum(&mut self, uuid: &[u8]) {
+        // Must set checksum field to 0 before calculation to avoid including old value
+        // causing checksum to never match (Linux semantics).
+        self.inode.osd2.l_checksum_lo = 0;
+        self.inode.checksum_hi = 0;
         let mut checksum = crc32(CRC32_INIT, uuid);
         checksum = crc32(checksum, &self.id.to_le_bytes());
         checksum = crc32(checksum, &self.inode.generation.to_le_bytes());

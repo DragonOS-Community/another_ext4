@@ -37,9 +37,14 @@ impl Ext4 {
 
     /// Write super block to block device
     pub(super) fn write_super_block(&self, sb: &SuperBlock) {
-        let mut block = Block::new(0, Box::new([0; BLOCK_SIZE]));
-        block.write_offset_as(BASE_OFFSET, sb);
-        self.write_block(&block)
+        // Must preserve other content in block 0 besides superblock (such as 1024B padding/boot code),
+        // cannot overwrite with all-zero block; also need to update superblock checksum,
+        // otherwise Linux will consider the filesystem corrupted and require e2fsck.
+        let mut block = self.read_block(0);
+        let mut sb = *sb;
+        sb.set_checksum();
+        block.write_offset_as(BASE_OFFSET, &sb);
+        self.write_block(&block);
     }
 
     /// Read an inode from block device, return an `InodeRef` that
@@ -47,7 +52,7 @@ impl Ext4 {
     pub(super) fn read_inode(&self, inode_id: InodeId) -> InodeRef {
         let (block_id, offset) = self.inode_disk_pos(inode_id);
         let block = self.read_block(block_id);
-        
+
         InodeRef::new(inode_id, Box::new(block.read_offset_as(offset)))
     }
 
